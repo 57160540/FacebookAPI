@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function showFilled(Value) {
+return (Value > 9) ? "" + Value : "0" + Value;
+}
+function StartClock24() {
+TheTime = new Date;
+document.clock.showTime.value = showFilled(TheTime.getHours()) + ":" +
+showFilled(TheTime.getMinutes()) + ":" + showFilled(TheTime.getSeconds());
+setTimeout("StartClock24()",1000)
+}
+//-->
+</script>
+<style type="text/css">
+<!--
+.input { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 8pt;border-style: none }
+-->
+</style>
+</head>
+ 
+<body onload="StartClock24()">
+ <form name="clock">
+<input type="text" name="showTime" size="8" class="input">
+</form>
+
+
+
+</body>
+</html>

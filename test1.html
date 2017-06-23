@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Hangman Duel</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="mystyle.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <link rel="shortcut icon" type="image/x-icon" href="pic/Logo-HangManDuel-for-web.png"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" script-name="bangers" src="https://use.edgefonts.net/bangers.js"></script>
+</head>
+
+<body background="pic\background.jpg" hidden>
+<div class="container-fluid">
+    <div class="row head">
+        <div class="col-md-5 col-sm-5 boxUser">
+            <div class="col-md-3 col-sm-3 boxPicUser" style="text-align: center;" id="user.pic"></div>
+            <div class="col-md-7 col-sm-7 boxNameUser" style="text-align: right; left: 35px;">
+                <div style="text-align: center;">
+                    <div class="font" id="user.name"></div>
+                    <br/>
+                    <h5 class="font">Leval <span id="user.level"></span> &nbsp;( EXP <span id="user.exp"></span> / <span
+                            id="user.max-exp"></span> )</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-2 box boxCoin">
+            <div class="font">
+                <img src="pic\coin.png" class="picCoin"/> <span id="user.coin"></span>
+            </div>
+        </div>
+        <div class="col-md-1 col-sm-1 col-xs-3">
+            <img src="pic\MailBox.png" title="Mail Box" id="mail" class="button-hover pictrue m"/ >
+        </div>
+        <div class="col-md-1 col-sm-1 col-xs-3">
+            <a href="#" onclick="invite()" id="invite">
+                <img src="pic\Invite.png" title="Invite Friend in Facebook" class="button-hover pictrue m"/>
+            </a>
+        </div>
+        <div class="col-md-1 col-sm-1 col-xs-3">
+            <a href="#" onclick="logout()" id="logout">
+                <img src="pic\logout.png" title="Logout" class="button-hover pictrue m"/>
+            </a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 col-sm-6 col-xs-12">
+            <img src="pic\17.gif" class="pictrue"/>
+            <div class="row ">
+                <div class="col-md-6 col-sm-6 ">
+                    <center>
+                        <button class="play" class="button-hover" href="#" onclick="play_single()"
+                                style="margin-top: 25px;">Play
+                        </button>
+                    </center>
+                </div>
+                <div class="col-md-6 col-sm-6 fontScore" style="margin-top: 20px; margin-bottom: 30px;">
+                    Single high score
+
+                    <br/>
+                    <div class="fontScore1" align="right"><span id="user.single_high_score"></span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12" style="margin-top: -85px;">
+            <img src="pic\Rank.png" class="picRank"/>
+            <div class="fontRank">
+                <center>
+                    <div class="Rank col-sx-6">
+
+                        <center>
+                            Rank
+                        </center>
+                    </div>
+                </center>
+            </div>
+            <!--box rank-->
+            <div class="row boxRank scrollbar" id="friends" style="overflow-x: hidden;"></div>
+            <!--END box rank-->
+        </div>
+    </div>
+</div>
+<div class="mailBox" id="mailBox">
+    <div class="row">
+        <div class="col-md-1 col-sm-1 col-xs-1"></div>
+        <div class="col-md-10 col-sm-10 col-xs-10" style="margin-top: -70px;">
+            <div class="fontRank">
+                <div class="row" style="margin-bottom: -35px;">
+                    <div class="Rank">
+                        <center style="margin-left: -30px;">Mail</center>
+                    </div>
+                    <div class="boxclose" id="boxclose">
+                        <img src="pic\close-button.png" height="42" width="42"
+                             style=" margin-left: 280px;margin-top: -45px;">
+                    </div>
+                </div>
+            </div>
+            <!--box mail-->
+            <div class="row boxRank scrollbar" id="mails" style="overflow-x: hidden; height: 370px;"></div>
+            <!--END box mail-->
+        </div>
+        <div class="col-md-1 col-sm-1 col-xs-1"></div>
+    </div>
+</div>
+
+</body>
+
+<script>
+    if (location.protocol != 'https:') {
+        location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
+    }
+
+    var mailBox = $('#mailBox');
+    // end.show();
+    mailBox.hide();
+    document.getElementById('mail').onclick = function () {
+        mailBox.fadeIn("slow");
+    }
+    document.getElementById('boxclose').onclick = function () {
+        mailBox.fadeOut("slow");
+    }
+    //================ Variable ================
+    var accessToken = null;
+    var me_fb_id = null;
+    var me_pic = null;
+    var me_name = null;
+    var me_status = null;
+    var all_friends = [];
+    var NumberFormat = new Intl.NumberFormat();
+
+    window.fbAsyncInit = function () {
+        FB.init({
+            appId: '1664574940517586',
+            cookie: true,
+            xfbml: true,
+            version: 'v2.8'
+        });
+
+        FB.getLoginStatus(function (response) {
+            if (response.status === 'connected') {
+                accessToken = response.authResponse.accessToken;
+                //alert("connected");
+
+                //================ Get My Profile ================
+                FB.api('me?fields=picture.width(200).height(200),id,name', 'GET', function (response) {
+                    me_fb_id = response.id;
+                    me_pic = response.picture.data.url;
+                    me_name = response.name;
+
+                    // Get Mails
+                    $.get("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-mail.php/mails/owner/" + me_fb_id, function (data, status) {
+                        data = JSON.parse(data);
+                        if(data.mails.length > 0){
+                            var isNewMail = false;
+                            $.each(data.mails, function (index, mail) {
+                                if(mail.sender != null){
+                                    isNewMail = true;
+                                    $("#mails").append("<div class='row userRank rankBox' id='mail_id_"+mail.mail_id+"'><div class='col-md-1 col-sm-1 col-xs-1'></div><div class='col-md-10 col-sm-10 col-xs-10'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'><b>"+mail.mail_name+"</b></div></div><hr class='hr_margin'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'>"+mail.mail_desc+"</div></div><hr class='hr_margin'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'><button class='btn btn-info btn-xs' href='#' onclick='accept_duel("+mail.mail_id+", "+mail.sender+")'>รับคำท้า</button></div></div></div><div class='col-md-1 col-sm-1 col-xs-1'></div></div>");
+                                }else{
+                                    if(mail.status == 0){
+                                        isNewMail = true;
+                                        $("#mails").append("<div class='row userRank rankBox' id='mail_id_"+mail.mail_id+"'><div class='col-md-1 col-sm-1 col-xs-1'></div><div class='col-md-10 col-sm-10 col-xs-10'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'><b>"+mail.mail_name+"</b></div></div><hr class='hr_margin'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'>"+mail.mail_desc+"</div></div><hr class='hr_margin'><div class='row'><div class='col-md-12 col-sm-12 col-xs-12'><button class='btn btn-info btn-xs' href='#' onclick='action_mail("+mail.mail_id+", 1)'>อ่านแล้ว</button> <button class='btn btn-danger btn-xs' href='#' onclick='action_mail("+mail.mail_id+", 2)'>ลบ</button></div></div></div><div class='col-md-1 col-sm-1 col-xs-1'></div></div>");
+                                    }
+                                }
+                            });
+                        }else{
+                            $("#mails").append("<div class='row'><div class='col-md-12'><center><p><b>ไม่มีข้อความ</b></p></center></div></div>");
+                        }
+                    });
+
+                    $.get("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-user.php/users/" + me_fb_id, function (data, status) {
+                        //alert("Data: " + data + "\nStatus: " + status);
+                        data = JSON.parse(data);
+                        all_friends.push(data.users[0]);
+
+                        me_status = data.users[0].status;
+                        if (me_status != 0) {
+                            if (me_status == 1) {
+                                window.location = "https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/game/single.html";
+                            } else if (me_status == 2) {
+                                //window.location = "https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/game/duel.html";
+                            }
+                        }
+                        document.getElementById('user.level').innerHTML = data.users[0].level;
+                        document.getElementById('user.exp').innerHTML = NumberFormat.format(data.users[0].exp);
+                        document.getElementById('user.max-exp').innerHTML = NumberFormat.format(Math.pow(2, (data.users[0].level - 1)) * 100);
+                        document.getElementById('user.coin').innerHTML = NumberFormat.format(data.users[0].coin);
+
+                        document.getElementById('user.single_high_score').innerHTML = NumberFormat.format(data.users[0].single_high_score);
+                    });
+                    document.getElementById('user.pic').innerHTML = "<img src='" + response.picture.data.url + "' class='picUser'/>";
+                    document.getElementById('user.name').innerHTML = response.name;
+                    //alert(me_fb_id+" : "+response.picture.data.url+" : "+response.name);
+                });
+
+                //================ Friend lists ================
+                FB.api("me/friends?fields=id,name,picture", function (response) {
+                    if (response && !response.error) {
+                        //console.log('Got friends: ', response.data);
+
+                        $.each(response.data, function (index, friend) {
+                            var friend_id = friend.id;
+                            $.get("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-user.php/users/" + friend_id, function (data, status) {
+                                //alert("Data: " + data + "\nStatus: " + status);
+                                data = JSON.parse(data);
+                                all_friends.push(data.users[0]);
+                                if (index == response.data.length - 1) {
+                                    showFriend(response.data, all_friends);
+                                }
+                            });
+                        });
+
+                        function showFriend(fb_obj, obj) {
+                            var highScoreAndfamousSort = function (a, b) {
+                                var sA = parseInt(a.single_high_score);
+                                var sB = parseInt(b.single_high_score);
+                                var pA = parseInt(a.famous_points);
+                                var pB = parseInt(b.famous_points);
+                                if (pA === undefined || pA < pB) {
+                                    return 1;
+                                }
+                                if (pB === undefined || pA > pB) {
+                                    return -1;
+                                }
+
+                                // names must be equal
+                                if (sA === undefined || sA < sB) {
+                                    return 1;
+                                }
+                                if (sB === undefined || sA > sB) {
+                                    return -1;
+                                }
+                                return 0;
+                            };
+//                            var famousSort = function (a,b) {
+//                                var pA = parseInt(a.famous_points);
+//                                var pB = parseInt(b.famous_points);
+//                                if (pA === undefined || pA < pB) {
+//                                    return 1;
+//                                }
+//                                if (pB === undefined || pA > pB) {
+//                                    return -1;
+//                                }
+//
+//                                // names must be equal
+//                                return 0;
+//                            };
+//                            obj.sort(famousSort);
+
+                            obj.sort(highScoreAndfamousSort);
+//                            console.log(obj);
+                            var ranking = null;
+                            $.each(obj, function (index, friend) {
+                                //------- Banner Ranking -------
+                                if (ranking != friend.rank) {
+                                    if (friend.rank == "Diamond") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 5,000+ Famous Points )</span></div>");
+                                    } else if (friend.rank == "Emerald") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 4,000 - 4,999 Famous Points )</span></div>");
+                                    } else if (friend.rank == "Ruby") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 3,000 - 3,999 Famous Points )</span></div>");
+                                    } else if (friend.rank == "Platinum") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 2,000 - 2,999 Famous Points )</span></div>");
+                                    } else if (friend.rank == "Goal") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 1,000 - 1,999 Famous Points )</span></div>");
+                                    } else if (friend.rank == "Silver") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 10 - 999 Famous Points )</span></div>");
+                                    } else if (friend.rank == "Stone") {
+                                        $("#friends").append("<div class='row font' style='border:2px solid #D3D3D3; background-color:#000000; text-align: center; margin: 5px;'><div class='col-md-12 col-sm-6 col-xs-12' style='margin: 5px;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem'/> &nbsp;<span>" + friend.rank + "</span> &nbsp;&nbsp;<span style='font-size: 15px;'>( 0 - 9 Famous Points )</span></div>");
+                                    }
+                                    ranking = friend.rank;
+                                }
+
+                                //------- All Friends -------
+                                if (friend.fb_id == me_fb_id) {
+                                    $("#friends").append("<div class='row userRank rankBox' style='background-color:#0000FF;'><div class='col-md-2 col-sm-2 col-xs-3 boxGem' style='text-align: center;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem' style='width:30px; height:25px;'/><br><h5 class='font margin' style='font-size: 12px;'>" + NumberFormat.format(friend.famous_points) + " Points</h5></div><div class='col-md-1 col-sm-1 col-xs-1' style='margin-left: -10px;'><img src='pic/line.png' class='line'></div><div class='col-md-2 col-sm-2 col-xs-6 boxGem'><img src='" + me_pic + "' class='picUser picUserRank'/></div><div class='col-md-4 col-sm-4 col-xs-8 boxGem' style='margin-left: 20px;'><div class='font'>" + me_name + "</div><br/><div class='font' style='margin-top: -6px;'> Level " + friend.level + " </div><br/><h5 class='font margin' style='margin-top: -8px;'>Single High Score " + NumberFormat.format(friend.single_high_score) + "</h5></div><div class='col-md-2 col-sm-2 col-xs-3 boxGem'></div></div>");
+                                } else {
+                                    var friend_pic, friend_name;
+                                    for (var i = 0; i < fb_obj.length; i++) {
+                                        if (friend.fb_id == fb_obj[i].id) {
+                                            //alert(friend.fb_id+":"+fb_obj[i].id);
+                                            friend_pic = fb_obj[i].picture.data.url;
+                                            friend_name = fb_obj[i].name;
+                                            break;
+                                        }
+                                    }
+                                    $("#friends").append("<div class='row userRank rankBox'><div class='col-md-2 col-sm-2 col-xs-3 boxGem' style='text-align: center;'><img src='pic/" + friend.rank + ".png' title='" + friend.rank + "' class='picGem' style='width:30px; height:25px;'/><br><h5 class='font margin' style='font-size: 12px;'>" + NumberFormat.format(friend.famous_points) + " Points</h5></div><div class='col-md-1 col-sm-1 col-xs-1' style='margin-left: -10px;'><img src='pic/line.png' class='line'></div><div class='col-md-2 col-sm-2 col-xs-6 boxGem'><img src='" + friend_pic + "' class='picUser picUserRank'/></div><div class='col-md-4 col-sm-4 col-xs-8 boxGem' style='margin-left: 20px;'><div class='font'>" + friend_name + "</div><br/><div class='font' style='margin-top: -6px;'> Level " + friend.level + " </div><br/><h5 class='font margin' style='margin-top: -8px;'>Single High Score " + NumberFormat.format(friend.single_high_score) + "</h5></div><div class='col-md-2 col-sm-2 col-xs-3 boxGem'><a href='#' onclick='invite_duel(" + friend.fb_id + ")' id='invite_duel_" + friend.fb_id + "'><img src='pic/duel.png' class='button-hover' title='Duel' style='margin-left: -30px;'/></a></div></div>");
+                                }
+                            });
+//                            console.log(JSON.stringify(obj));
+                        }
+
+                    } else {
+                        alert("Error!");
+                    }
+                });
+
+                document.getElementsByTagName('body')[0].removeAttribute("hidden");
+
+            } else {
+                window.location = "index.html";
+            }
+        });
+    };
+
+    (function (d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {
+            return;
+        }
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    function logout() {
+        //alert("click logout");
+        FB.logout(function (response) {
+            alert("logout successfully.");
+            window.location = "index.html";
+        });
+    }
+
+    function invite() {
+        //alert("click logout");
+        FB.ui({
+            method: 'apprequests',
+            message: 'มาเล่นด้วยกันสิ!!...',
+            //action_type:'send'
+            //link: 'https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/'
+        }, function (response) {
+            //console.log(response);
+            var check = false;
+            $.each(response.to, function (index, friend) {
+                //alert(friend);
+                check = true;
+                $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-inviteFriends.php/invite-friends",
+                        {
+                            "invite": me_fb_id,
+                            "receiver_invite": friend
+                        },
+                        function (data, status) {
+                            //alert("Data: " + data + "\nStatus: " + status);
+                        });
+            });
+            if (check) {
+                alert("คุณชวนเพื่อนสำเร็จแล้ว!! คุณจะได้รับ Bonus 1,000 Coins/คน หลังจากที่เพื่อนของคุณตอบรับคำเชิญ");
+            }
+        });
+    }
+
+    function invite_duel(fb_id) {
+        //alert("click logout");
+        FB.ui({
+            method: 'apprequests',
+            message: 'ฉันได้ท้าแข่งกับคุณ ตอนนี้ถึงตาคุณแล้ว!!...',
+            //action_type: 'turn',
+            link: 'https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/',
+            href: 'https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/',
+            to: fb_id
+        }, function (response) {
+            console.log(response);
+            $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-duel.php/duel/users",
+                    {
+                        "invite": me_fb_id,
+                        "receiver_invite": response.to[0]
+                    },
+                    function (data, status) {
+                        //alert("Data: " + data + "\nStatus: " + status);
+                        data = JSON.parse(data);
+                        if (data.error) {
+                            if (data.message == "Your friend has not played.") {
+                                alert(data.message);
+                            } else {
+                                alert(data.message + "\nEntering Game...");
+                                $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-user.php/users/" + me_fb_id + "/status",
+                                        {
+                                            "status": 2
+                                        },
+                                        function (data, status) {
+                                            window.location = "https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/game/duel.html?friend=" + response.to[0];
+                                        });
+                            }
+                        } else {
+                            // send mail to friend...
+                            $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-mail.php/mails",
+                                    {
+                                        "mail_name": me_name + " ท้าคุณแข่งโหมด Duel",
+                                        "mail_desc": "เจอกันได้ถ้าแน่จริง (" + me_name + " ฝากบอกมา...) กดที่นี่เพื่อตอบรับคำท้า",
+                                        "owner": fb_id,
+                                        "sender": me_fb_id
+                                    },
+                                    function (data, status) {
+                                        //alert("Data: " + data + "\nStatus: " + status);
+                                        $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-user.php/users/" + me_fb_id + "/status",
+                                                {
+                                                    "status": 2
+                                                },
+                                                function (data, status) {
+                                                    window.location = "https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/game/duel.html?friend=" + response.to[0];
+                                                });
+                                    });
+
+                        }
+                    });
+            
+        });
+    }
+
+    function play_single() {
+        //alert("click logout");
+        $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-user.php/users/" + me_fb_id + "/status",
+                {
+                    "status": 1
+                },
+                function (data, status) {
+                    $.post("https://angsila.cs.buu.ac.th/~57160608/887373/hangman/api/api-single.php/single/users",
+                            {
+                                "fb_id": me_fb_id
+                            },
+                            function (data, status) {
+                                //alert("Data: " + data + "\nStatus: " + status);
+                                window.location = "https://angsila.cs.buu.ac.th/~57160033/887373%20Web%20Services/HangmanDuel/game/single.html";
+                            });
+                });
+    }
+</script>
+</html>
